@@ -1,0 +1,33 @@
+{
+  "name": "image-capture",
+  "version": "0.0.1",
+  "description": "tba",
+  "main": "index.js",
+  "scripts": {
+    "demo": "browserify ./demo/demo.js -o ./demo/bundle.js -t [ babelify --presets [ @babel/preset-env ] ]"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/something/something.git"
+  },
+  "keywords": [
+    "image",
+    "orientation",
+    "capture",
+    "scale",
+    "crop"
+  ],
+  "author": "Zwyssigly",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/something/something/issues"
+  },
+  "homepage": "https://github.com/something/something#readme",
+  "dependencies": {},
+  "devDependencies": {
+    "@babel/core": "^7.8.7",
+    "@babel/preset-env": "^7.8.7",
+    "@babel/polyfill": "^7.8.7",
+    "babelify": "^10.0.0"
+  }
+}
