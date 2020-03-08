@@ -4,7 +4,7 @@ var options = {
   capture: 'environment|user|promt',
   maxWidth: 512,
   maxHeight: 512,
-  fixOrientation: true,
+  orientation: 'meta'|1-8,
   cropRatio: [16, 9],
   cropBehavior: 'contain|cover',
   cropColor: '#FFFFFF',
@@ -15,20 +15,76 @@ var options = {
 
 */
 
+let rotationMap = {
+  1: { counterClockwise: 8, clockwise: 6, flipHorizontally: 2, flipVertically: 4 },
+  2: { counterClockwise: 5, clockwise: 7, flipHorizontally: 1, flipVertically: 3 },
+  3: { counterClockwise: 6, clockwise: 8, flipHorizontally: 4, flipVertically: 2 },
+  4: { counterClockwise: 7, clockwise: 5, flipHorizontally: 3, flipVertically: 1 },
+  5: { counterClockwise: 4, clockwise: 2, flipHorizontally: 6, flipVertically: 8 },
+  6: { counterClockwise: 1, clockwise: 3, flipHorizontally: 5, flipVertically: 7 },
+  7: { counterClockwise: 2, clockwise: 4, flipHorizontally: 8, flipVertically: 6 },
+  8: { counterClockwise: 3, clockwise: 1, flipHorizontally: 7, flipVertically: 5 }
+}
+
+class PictureResult {
+  
+  
+  constructor(original, data, options) {
+    this.original = original;
+    this.data = data;
+    this.options = options;
+  }
+
+  rotateClockwise() {
+    return processFile(this.original, {
+      ...this.options,
+      orientation: rotationMap[this.options.orientation].clockwise
+    });
+  }
+
+  rotateCounterClockwise() {
+    return processFile(this.original, {
+      ...this.options,
+      orientation: rotationMap[this.options.orientation].counterClockwise
+    });
+  }
+
+  flipHorizontally () {
+    return processFile(this.original, {
+      ...this.options,
+      orientation: rotationMap[this.options.orientation].flipHorizontally
+    });
+  }
+
+  flipVertically () {
+    return processFile(this.original, {
+      ...this.options,
+      orientation: rotationMap[this.options.orientation].flipVertically
+    });
+  }
+}
+
 
 function fallback (options) {
   
   const defaultOptions = {
     capture: 'environment',
-    fixOrientation: true,
+    orientation: 'meta',
     mimeType: 'image/jpeg',
     quality: 0.75,
     output: 'blob',
     cropBehavior: 'cover'
   };
 
-  return { ...defaultOptions, ...options }; 
-  
+  options = { ...defaultOptions, ...options }; 
+
+  if (!(options.debug instanceof Function)) {
+    options.debug = options.debug
+      ? err => console.log('[image-capture] ' + err())
+      : () => {};
+  }
+
+  return options;
 }
 
 function openFile (options) {
@@ -61,10 +117,10 @@ function getOrientation (file) {
     var reader = new FileReader();
 
     reader.onload = () => {
-      const view = new DataView(reader.result, 0, 256000);
+      const view = new DataView(reader.result, 0);//, Math.min(256000, reader.result.length/3));
 
       if (view.getUint16(0, false) != 0xFFD8) {
-          return reject("is not a jpeg");
+          return reject("no_jpeg");
       }
 
       const length = view.byteLength
@@ -78,7 +134,7 @@ function getOrientation (file) {
 
           if (marker == 0xFFE1) {
             if (view.getUint32(offset += 2, false) != 0x45786966) {
-              return reject("orientation is not defined");
+              return reject("no_exif_orientation");
             }
 
             let little = view.getUint16(offset += 6, false) == 0x4949;
@@ -97,7 +153,7 @@ function getOrientation (file) {
               offset += view.getUint16(offset, false);
           }
       }
-      return reject("orientation is not defined");
+      return reject("no_exif_orientation");
     };
 
     reader.readAsArrayBuffer(file);
@@ -110,21 +166,30 @@ async function capturePicture (options) {
   return processFile(file, options);
 }
 
-async function dropPicture (file, options) {
-  options = fallback(options);
-  return processFile(file, options);
+function dropPicture (file, options) {
+  return processFile(file, fallback(options));
 }
 
 async function processFile (file, options) {
   let image = await loadImage(file);
 
-  let orientation = options.fixOrientation ? await getOrientation(file) : 1;
+  if (options.orientation === 'meta') {
+    try {
+      options.orientation = await getOrientation(file);
+      options.debug(() => 'Read orientation from exif: ' + options.orientation);
+    } catch (err) {
+      options.orientation = 1;
+      options.debug(() => 'Could not find any exif orientation: ' + err);
+    }
+  }
 
-  var size = await calculateSize(image, options, orientation);
+  var size = calculateSize(image, options);
 
-  var canvas = renderImage(image, options, size, orientation)
+  var canvas = renderImage(image, options, size)
 
-  return await convert(file, canvas, options);
+  var data = await convert(file, canvas, options);
+
+  return new PictureResult(file, data, options);
 }
 
 function convert (file, canvas, options) {
@@ -160,7 +225,7 @@ function loadImage (file) {
   });
 }
 
-function renderImage(image, options, size, orientation) {
+function renderImage(image, options, size) {
   let canvas = document.createElement('canvas');
 
   canvas.width = size.transformed[0];
@@ -175,32 +240,30 @@ function renderImage(image, options, size, orientation) {
 
   context.translate(size.transformed[0] / 2.0, size.transformed[1] / 2.0)
 
-  if (options.fixOrientation) {
-    switch (orientation) {
-      case 2:
-        context.scale(-1, 1);
-        break;
-      case 3:
-        context.rotate(Math.PI);
-        break;
-      case 4:
-        context.scale(1, -1);
-        break;
-      case 5:
-        context.rotate(Math.PI / 2);
-        context.scale(1, -1);
-        break;
-      case 6:
-        context.rotate(Math.PI / 2);
-        break;
-      case 7:
-        context.rotate(Math.PI / 2.0);
-        context.scale(-1, 1);
-        break;
-      case 8:
-        context.rotate(Math.PI / -2.0);
-        break;
-    }
+  switch (options.orientation) {
+    case 2:
+      context.scale(-1, 1);
+      break;
+    case 3:
+      context.rotate(Math.PI);
+      break;
+    case 4:
+      context.scale(1, -1);
+      break;
+    case 5:
+      context.rotate(Math.PI / 2);
+      context.scale(1, -1);
+      break;
+    case 6:
+      context.rotate(Math.PI / 2);
+      break;
+    case 7:
+      context.rotate(Math.PI / 2.0);
+      context.scale(-1, 1);
+      break;
+    case 8:
+      context.rotate(Math.PI / -2.0);
+      break;
   }
 
   let scale = size.transformed[0] / size.original[0];
@@ -226,16 +289,14 @@ function renderImage(image, options, size, orientation) {
   return canvas;
 }
 
-async function calculateSize(image, options, orientation) {
+function calculateSize(image, options) {
 
   var original = [image.naturalWidth, image.naturalHeight];
-
-  if (options.fixOrientation) {    
-    if (orientation > 4) {
-      let tmp = original[0];
-      original[0] = original[1];
-      original[1] = tmp;
-    }
+ 
+  if (options.orientation > 4) {
+    let tmp = original[0];
+    original[0] = original[1];
+    original[1] = tmp;
   }
 
   var transformed = [...original];
@@ -270,5 +331,6 @@ async function calculateSize(image, options, orientation) {
 }
 
 export {
-  capturePicture
+  capturePicture,
+  dropPicture
 }

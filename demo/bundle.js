@@ -5,21 +5,43 @@ var _index = require("../index");
 
 require("@babel/polyfill");
 
+window.result = null;
+
+function apply(result) {
+  console.log(result);
+  window.result = result;
+  document.getElementById('img').src = result.data;
+}
+
 window.onload = function () {
   document.getElementById("btn").onclick = function () {
     (0, _index.capturePicture)({
       output: 'dataUrl',
-      cropColor: 'red',
+      cropColor: 'black',
       maxWidth: 512,
       maxHeight: 512,
       cropRatio: [1, 1],
-      cropBehavior: 'cover',
-      fixOrientation: false,
-      capture: 'user'
-    }).then(function (url) {
-      console.log(url);
-      document.getElementById('img').src = url;
-    });
+      cropBehavior: 'contain',
+      fixOrientation: true,
+      capture: 'user',
+      debug: true
+    }).then(apply);
+  };
+
+  document.getElementById("cw").onclick = function () {
+    window.result.rotateClockwise().then(apply);
+  };
+
+  document.getElementById("ccw").onclick = function () {
+    window.result.rotateCounterClockwise().then(apply);
+  };
+
+  document.getElementById("fh").onclick = function () {
+    window.result.flipHorizontally().then(apply);
+  };
+
+  document.getElementById("fv").onclick = function () {
+    window.result.flipVertically().then(apply);
   };
 }; //export default init;
 
@@ -30,6 +52,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.capturePicture = capturePicture;
+exports.dropPicture = dropPicture;
 
 function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
 
@@ -41,13 +64,19 @@ function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { va
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
 /*
 
 var options = {
   capture: 'environment|user|promt',
   maxWidth: 512,
   maxHeight: 512,
-  fixOrientation: true,
+  orientation: 'meta'|1-8,
   cropRatio: [16, 9],
   cropBehavior: 'contain|cover',
   cropColor: '#FFFFFF',
@@ -57,16 +86,117 @@ var options = {
 }
 
 */
+var rotationMap = {
+  1: {
+    counterClockwise: 8,
+    clockwise: 6,
+    flipHorizontally: 2,
+    flipVertically: 4
+  },
+  2: {
+    counterClockwise: 5,
+    clockwise: 7,
+    flipHorizontally: 1,
+    flipVertically: 3
+  },
+  3: {
+    counterClockwise: 6,
+    clockwise: 8,
+    flipHorizontally: 4,
+    flipVertically: 2
+  },
+  4: {
+    counterClockwise: 7,
+    clockwise: 5,
+    flipHorizontally: 3,
+    flipVertically: 1
+  },
+  5: {
+    counterClockwise: 4,
+    clockwise: 2,
+    flipHorizontally: 6,
+    flipVertically: 8
+  },
+  6: {
+    counterClockwise: 1,
+    clockwise: 3,
+    flipHorizontally: 5,
+    flipVertically: 7
+  },
+  7: {
+    counterClockwise: 2,
+    clockwise: 4,
+    flipHorizontally: 8,
+    flipVertically: 6
+  },
+  8: {
+    counterClockwise: 3,
+    clockwise: 1,
+    flipHorizontally: 7,
+    flipVertically: 5
+  }
+};
+
+var PictureResult = /*#__PURE__*/function () {
+  function PictureResult(original, data, options) {
+    _classCallCheck(this, PictureResult);
+
+    this.original = original;
+    this.data = data;
+    this.options = options;
+  }
+
+  _createClass(PictureResult, [{
+    key: "rotateClockwise",
+    value: function rotateClockwise() {
+      return processFile(this.original, _objectSpread({}, this.options, {
+        orientation: rotationMap[this.options.orientation].clockwise
+      }));
+    }
+  }, {
+    key: "rotateCounterClockwise",
+    value: function rotateCounterClockwise() {
+      return processFile(this.original, _objectSpread({}, this.options, {
+        orientation: rotationMap[this.options.orientation].counterClockwise
+      }));
+    }
+  }, {
+    key: "flipHorizontally",
+    value: function flipHorizontally() {
+      return processFile(this.original, _objectSpread({}, this.options, {
+        orientation: rotationMap[this.options.orientation].flipHorizontally
+      }));
+    }
+  }, {
+    key: "flipVertically",
+    value: function flipVertically() {
+      return processFile(this.original, _objectSpread({}, this.options, {
+        orientation: rotationMap[this.options.orientation].flipVertically
+      }));
+    }
+  }]);
+
+  return PictureResult;
+}();
+
 function fallback(options) {
   var defaultOptions = {
     capture: 'environment',
-    fixOrientation: true,
+    orientation: 'meta',
     mimeType: 'image/jpeg',
     quality: 0.75,
     output: 'blob',
     cropBehavior: 'cover'
   };
-  return _objectSpread({}, defaultOptions, {}, options);
+  options = _objectSpread({}, defaultOptions, {}, options);
+
+  if (!(options.debug instanceof Function)) {
+    options.debug = options.debug ? function (err) {
+      return console.log('[image-capture] ' + err());
+    } : function () {};
+  }
+
+  return options;
 }
 
 function openFile(options) {
@@ -98,10 +228,10 @@ function getOrientation(file) {
     var reader = new FileReader();
 
     reader.onload = function () {
-      var view = new DataView(reader.result, 0, 256000);
+      var view = new DataView(reader.result, 0); //, Math.min(256000, reader.result.length/3));
 
       if (view.getUint16(0, false) != 0xFFD8) {
-        return reject("is not a jpeg");
+        return reject("no_jpeg");
       }
 
       var length = view.byteLength;
@@ -114,7 +244,7 @@ function getOrientation(file) {
 
         if (marker == 0xFFE1) {
           if (view.getUint32(offset += 2, false) != 0x45786966) {
-            return reject("orientation is not defined");
+            return reject("no_exif_orientation");
           }
 
           var little = view.getUint16(offset += 6, false) == 0x4949;
@@ -134,7 +264,7 @@ function getOrientation(file) {
         }
       }
 
-      return reject("orientation is not defined");
+      return reject("no_exif_orientation");
     };
 
     reader.readAsArrayBuffer(file);
@@ -170,82 +300,68 @@ function _capturePicture() {
   return _capturePicture.apply(this, arguments);
 }
 
-function dropPicture(_x2, _x3) {
-  return _dropPicture.apply(this, arguments);
+function dropPicture(file, options) {
+  return processFile(file, fallback(options));
 }
 
-function _dropPicture() {
-  _dropPicture = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(file, options) {
-    return regeneratorRuntime.wrap(function _callee2$(_context2) {
-      while (1) {
-        switch (_context2.prev = _context2.next) {
-          case 0:
-            options = fallback(options);
-            return _context2.abrupt("return", processFile(file, options));
-
-          case 2:
-          case "end":
-            return _context2.stop();
-        }
-      }
-    }, _callee2);
-  }));
-  return _dropPicture.apply(this, arguments);
-}
-
-function processFile(_x4, _x5) {
+function processFile(_x2, _x3) {
   return _processFile.apply(this, arguments);
 }
 
 function _processFile() {
-  _processFile = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3(file, options) {
-    var image, orientation, size, canvas;
-    return regeneratorRuntime.wrap(function _callee3$(_context3) {
+  _processFile = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(file, options) {
+    var image, size, canvas, data;
+    return regeneratorRuntime.wrap(function _callee2$(_context2) {
       while (1) {
-        switch (_context3.prev = _context3.next) {
+        switch (_context2.prev = _context2.next) {
           case 0:
-            _context3.next = 2;
+            _context2.next = 2;
             return loadImage(file);
 
           case 2:
-            image = _context3.sent;
+            image = _context2.sent;
 
-            if (!options.fixOrientation) {
-              _context3.next = 9;
+            if (!(options.orientation === 'meta')) {
+              _context2.next = 15;
               break;
             }
 
-            _context3.next = 6;
+            _context2.prev = 4;
+            _context2.next = 7;
             return getOrientation(file);
 
-          case 6:
-            _context3.t0 = _context3.sent;
-            _context3.next = 10;
+          case 7:
+            options.orientation = _context2.sent;
+            options.debug(function () {
+              return 'Read orientation from exif: ' + options.orientation;
+            });
+            _context2.next = 15;
             break;
 
-          case 9:
-            _context3.t0 = 1;
+          case 11:
+            _context2.prev = 11;
+            _context2.t0 = _context2["catch"](4);
+            options.orientation = 1;
+            options.debug(function () {
+              return 'Could not find any exif orientation: ' + _context2.t0;
+            });
 
-          case 10:
-            orientation = _context3.t0;
-            _context3.next = 13;
-            return calculateSize(image, options, orientation);
-
-          case 13:
-            size = _context3.sent;
-            canvas = renderImage(image, options, size, orientation);
-            _context3.next = 17;
+          case 15:
+            size = calculateSize(image, options);
+            canvas = renderImage(image, options, size);
+            _context2.next = 19;
             return convert(file, canvas, options);
 
-          case 17:
-            return _context3.abrupt("return", _context3.sent);
+          case 19:
+            data = _context2.sent;
+            return _context2.abrupt("return", new PictureResult(file, data, options));
 
-          case 18:
+          case 21:
           case "end":
-            return _context3.stop();
+            return _context2.stop();
         }
       }
-    }, _callee3);
+    }, _callee2, null, [[4, 11]]);
   }));
   return _processFile.apply(this, arguments);
 }
@@ -288,7 +404,7 @@ function loadImage(file) {
   });
 }
 
-function renderImage(image, options, size, orientation) {
+function renderImage(image, options, size) {
   var canvas = document.createElement('canvas');
   canvas.width = size.transformed[0];
   canvas.height = size.transformed[1];
@@ -301,38 +417,36 @@ function renderImage(image, options, size, orientation) {
 
   context.translate(size.transformed[0] / 2.0, size.transformed[1] / 2.0);
 
-  if (options.fixOrientation) {
-    switch (orientation) {
-      case 2:
-        context.scale(-1, 1);
-        break;
+  switch (options.orientation) {
+    case 2:
+      context.scale(-1, 1);
+      break;
 
-      case 3:
-        context.rotate(Math.PI);
-        break;
+    case 3:
+      context.rotate(Math.PI);
+      break;
 
-      case 4:
-        context.scale(1, -1);
-        break;
+    case 4:
+      context.scale(1, -1);
+      break;
 
-      case 5:
-        context.rotate(Math.PI / 2);
-        context.scale(1, -1);
-        break;
+    case 5:
+      context.rotate(Math.PI / 2);
+      context.scale(1, -1);
+      break;
 
-      case 6:
-        context.rotate(Math.PI / 2);
-        break;
+    case 6:
+      context.rotate(Math.PI / 2);
+      break;
 
-      case 7:
-        context.rotate(Math.PI / 2.0);
-        context.scale(-1, 1);
-        break;
+    case 7:
+      context.rotate(Math.PI / 2.0);
+      context.scale(-1, 1);
+      break;
 
-      case 8:
-        context.rotate(Math.PI / -2.0);
-        break;
-    }
+    case 8:
+      context.rotate(Math.PI / -2.0);
+      break;
   }
 
   var scale = size.transformed[0] / size.original[0];
@@ -359,63 +473,42 @@ function renderImage(image, options, size, orientation) {
   return canvas;
 }
 
-function calculateSize(_x6, _x7, _x8) {
-  return _calculateSize.apply(this, arguments);
-}
+function calculateSize(image, options) {
+  var original = [image.naturalWidth, image.naturalHeight];
 
-function _calculateSize() {
-  _calculateSize = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4(image, options, orientation) {
-    var original, tmp, transformed, factor, diff, mode, maxWidth, maxHeight, _factor;
+  if (options.orientation > 4) {
+    var tmp = original[0];
+    original[0] = original[1];
+    original[1] = tmp;
+  }
 
-    return regeneratorRuntime.wrap(function _callee4$(_context4) {
-      while (1) {
-        switch (_context4.prev = _context4.next) {
-          case 0:
-            original = [image.naturalWidth, image.naturalHeight];
+  var transformed = [].concat(original);
 
-            if (options.fixOrientation) {
-              if (orientation > 4) {
-                tmp = original[0];
-                original[0] = original[1];
-                original[1] = tmp;
-              }
-            }
+  if (options.cropRatio instanceof Array && options.cropRatio.length === 2) {
+    var factor = options.cropRatio[0] / options.cropRatio[1];
+    var diff = transformed[0] * factor - transformed[1];
+    var mode = diff / Math.abs(diff) | 0;
 
-            transformed = [].concat(original);
+    if (mode < 0) {
+      transformed = [transformed[0], transformed[0] * factor | 0];
+    } else if (mode > 0) {
+      transformed = [transformed[1] / factor | 0, transformed[1]];
+    }
+  }
 
-            if (options.cropRatio instanceof Array && options.cropRatio.length === 2) {
-              factor = options.cropRatio[0] / options.cropRatio[1];
-              diff = transformed[0] * factor - transformed[1];
-              mode = diff / Math.abs(diff) | 0;
+  var maxWidth = options.maxWidth || transformed[0];
+  var maxHeight = options.maxHeight || transformed[1];
 
-              if (mode < 0) {
-                transformed = [transformed[0], transformed[0] * factor | 0];
-              } else if (mode > 0) {
-                transformed = [transformed[1] / factor | 0, transformed[1]];
-              }
-            }
+  if (transformed[0] > maxWidth || transformed[1] > maxHeight) {
+    var _factor = Math.max(transformed[0] / maxWidth, transformed[1] / maxHeight);
 
-            maxWidth = options.maxWidth || transformed[0];
-            maxHeight = options.maxHeight || transformed[1];
+    transformed = [transformed[0] / _factor | 0, transformed[1] / _factor | 0];
+  }
 
-            if (transformed[0] > maxWidth || transformed[1] > maxHeight) {
-              _factor = Math.max(transformed[0] / maxWidth, transformed[1] / maxHeight);
-              transformed = [transformed[0] / _factor | 0, transformed[1] / _factor | 0];
-            }
-
-            return _context4.abrupt("return", {
-              original: original,
-              transformed: transformed
-            });
-
-          case 8:
-          case "end":
-            return _context4.stop();
-        }
-      }
-    }, _callee4);
-  }));
-  return _calculateSize.apply(this, arguments);
+  return {
+    original: original,
+    transformed: transformed
+  };
 }
 
 },{}],3:[function(require,module,exports){

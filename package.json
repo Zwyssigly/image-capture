@@ -1,6 +1,6 @@
 {
-  "name": "image-capture",
-  "version": "0.0.1",
+  "name": "@zwyssigly/image-capture",
+  "version": "0.1.0",
   "description": "tba",
   "main": "index.js",
   "scripts": {
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/something/something.git"
+    "url": "git+https://github.com/Zwyssigly/image-capture.git"
   },
   "keywords": [
     "image",
@@ -20,9 +20,9 @@
   "author": "Zwyssigly",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/something/something/issues"
+    "url": "https://github.com/Zwyssigly/image-capture/issues"
   },
-  "homepage": "https://github.com/something/something#readme",
+  "homepage": "https://github.com/Zwyssigly/image-capture#readme",
   "dependencies": {},
   "devDependencies": {
     "@babel/core": "^7.8.7",
