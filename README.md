@@ -1,3 +1,6 @@
+### WARNING
+This Package is under early development and will have breaking changes and bugs !!!
+
 ### Description
 `image-capture` is a client library to process captured images before upload.
 
@@ -17,11 +20,14 @@
 ### Options
 |  Option | Type  | Default | Description |
 | ------------ | ------------ | ------------ | ------------ |
-|  `capture` | `falsetrue|string`  |   |   |
-|   |   |
-|   |   |
-
-
-
-
- 
+|  `capture`  | `false⎮'environment'⎮'user'` | `false` | when set, it will open the camera instead of a file dialog on smart phones  |
+|  `maxWidth` | `false⎮int`  | `false` | images is scaled down to fit within the given width |
+|  `maxHeight` | `false⎮int`  | `false` | images is scaled down to fit within the given height |
+|  `maxHeight` | `false⎮int`  | `false` | images is scaled down to fit within the given height |
+| `orientation`  | `'meta'⎮1-8`  | `'meta'` | either get orientation from exif or uses the given orientation. (1 means no rotation or flipping) |
+| `cropRatio`  | `false⎮[int, int]`  | `false` | when set, it will enforce given ratio and crop the picture to fit |
+| `cropFit`  | `'cover'⎮contain'`  | `cover` |  |
+| `cropColor`  | `string`  | `#000000` |   |
+| `mimeType`  | `'keep'⎮string`  | `'image/jpeg'` |   |
+| `quality` | `0-1` | `0.75` | |
+| `output` | `'blob'⎮dataUrl'` | `'blob'` |  |
