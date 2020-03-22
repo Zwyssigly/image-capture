@@ -19,7 +19,6 @@ window.onload = () => {
       maxHeight: 512,
       cropRatio: [1, 1],
       cropBehavior: 'contain',
-      fixOrientation: true,
       // capture: 'user',
       debug: true
     }).then(apply);

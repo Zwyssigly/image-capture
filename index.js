@@ -73,7 +73,8 @@ function fallback (options) {
     mimeType: 'image/jpeg',
     quality: 0.75,
     output: 'blob',
-    cropFit: 'cover'
+    cropFit: 'cover',
+    cropColor: '#000000'
   };
 
   options = { ...defaultOptions, ...options }; 
