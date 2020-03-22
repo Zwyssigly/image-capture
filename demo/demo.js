@@ -20,7 +20,7 @@ window.onload = () => {
       cropRatio: [1, 1],
       cropBehavior: 'contain',
       fixOrientation: true,
-      capture: 'user',
+      // capture: 'user',
       debug: true
     }).then(apply);
   };

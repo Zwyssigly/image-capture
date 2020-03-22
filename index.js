@@ -1,12 +1,12 @@
 /*
 
 var options = {
-  capture: 'environment|user|promt',
+  capture: true,
   maxWidth: 512,
   maxHeight: 512,
   orientation: 'meta'|1-8,
   cropRatio: [16, 9],
-  cropBehavior: 'contain|cover',
+  cropFit: 'contain|cover',
   cropColor: '#FFFFFF',
   mimeType: 'keep|image/*',
   quality: 0-1,
@@ -68,12 +68,12 @@ class PictureResult {
 function fallback (options) {
   
   const defaultOptions = {
-    capture: 'environment',
+    capture: false,
     orientation: 'meta',
     mimeType: 'image/jpeg',
     quality: 0.75,
     output: 'blob',
-    cropBehavior: 'cover'
+    cropFit: 'cover'
   };
 
   options = { ...defaultOptions, ...options }; 
@@ -93,8 +93,11 @@ function openFile (options) {
 
     input.type = 'file';
     input.accept = 'image/*';
-    input.capture = options.capture;
     input.multiple = false;
+
+    if (options.capture) {
+      input.capture = options.capture;
+    }
 
     input.onchange = () => {
       if (input.files.length === 1) {
@@ -128,7 +131,9 @@ function getOrientation (file) {
 
       while (offset < length)
       {
-          if (view.getUint16(offset+2, false) <= 8) return callback(-1);
+          if (view.getUint16(offset+2, false) <= 8) {
+            return reject("no_exif_orientation");
+          }
           let marker = view.getUint16(offset, false);
           offset += 2;
 
@@ -166,7 +171,7 @@ async function capturePicture (options) {
   return processFile(file, options);
 }
 
-function dropPicture (file, options) {
+function processPicture (file, options) {
   return processFile(file, fallback(options));
 }
 
@@ -268,9 +273,9 @@ function renderImage(image, options, size) {
 
   let scale = size.transformed[0] / size.original[0];
   
-  if (options.cropBehavior) {
+  if (options.cropFit) {
     let scaleY = size.transformed[1] / size.original[1];
-    switch (options.cropBehavior) {
+    switch (options.cropFit) {
       case 'contain': 
         scale = Math.min(scale, scaleY);
         break;
@@ -278,7 +283,7 @@ function renderImage(image, options, size) {
         scale = Math.max(scale, scaleY);
         break;
       default:
-        throw 'excaption';
+        throw 'unkown_cropFit';
     }
   }
 
@@ -332,5 +337,5 @@ function calculateSize(image, options) {
 
 export {
   capturePicture,
-  dropPicture
+  processPicture
 }

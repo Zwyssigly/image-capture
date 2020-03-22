@@ -23,7 +23,7 @@ window.onload = function () {
       cropRatio: [1, 1],
       cropBehavior: 'contain',
       fixOrientation: true,
-      capture: 'user',
+      // capture: 'user',
       debug: true
     }).then(apply);
   };
@@ -52,7 +52,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.capturePicture = capturePicture;
-exports.dropPicture = dropPicture;
+exports.processPicture = processPicture;
 
 function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
 
@@ -73,12 +73,12 @@ function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _d
 /*
 
 var options = {
-  capture: 'environment|user|promt',
+  capture: true,
   maxWidth: 512,
   maxHeight: 512,
   orientation: 'meta'|1-8,
   cropRatio: [16, 9],
-  cropBehavior: 'contain|cover',
+  cropFit: 'contain|cover',
   cropColor: '#FFFFFF',
   mimeType: 'keep|image/*',
   quality: 0-1,
@@ -181,12 +181,12 @@ var PictureResult = /*#__PURE__*/function () {
 
 function fallback(options) {
   var defaultOptions = {
-    capture: 'environment',
+    capture: false,
     orientation: 'meta',
     mimeType: 'image/jpeg',
     quality: 0.75,
     output: 'blob',
-    cropBehavior: 'cover'
+    cropFit: 'cover'
   };
   options = _objectSpread({}, defaultOptions, {}, options);
 
@@ -204,8 +204,11 @@ function openFile(options) {
     var input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
-    input.capture = options.capture;
     input.multiple = false;
+
+    if (options.capture) {
+      input.capture = options.capture;
+    }
 
     input.onchange = function () {
       if (input.files.length === 1) {
@@ -300,7 +303,7 @@ function _capturePicture() {
   return _capturePicture.apply(this, arguments);
 }
 
-function dropPicture(file, options) {
+function processPicture(file, options) {
   return processFile(file, fallback(options));
 }
 
@@ -451,10 +454,10 @@ function renderImage(image, options, size) {
 
   var scale = size.transformed[0] / size.original[0];
 
-  if (options.cropBehavior) {
+  if (options.cropFit) {
     var scaleY = size.transformed[1] / size.original[1];
 
-    switch (options.cropBehavior) {
+    switch (options.cropFit) {
       case 'contain':
         scale = Math.min(scale, scaleY);
         break;
@@ -464,7 +467,7 @@ function renderImage(image, options, size) {
         break;
 
       default:
-        throw 'excaption';
+        throw 'unkown_cropFit';
     }
   }
 
